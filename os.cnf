@@ -1,0 +1,9 @@
+[openstack]
+version=2.1
+user=admin
+password=password
+tenant=demo
+auth_url=http://<<IP>>:5000/v2.0
+services_list=nova
+daemon_file=
+output_file=
