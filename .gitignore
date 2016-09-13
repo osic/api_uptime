@@ -56,3 +56,9 @@ ChangeLog
 
 # Files created by releasenotes build
 releasenotes/build
+
+# pyenv
+.python-version
+
+# pycharm
+.idea/*
