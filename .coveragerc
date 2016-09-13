@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = api_uptime
+
+[report]
+ignore_errors = True
