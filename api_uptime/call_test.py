@@ -25,8 +25,7 @@ import test
 class ArgumentParser(argparse.ArgumentParser):
     def __init__(self):
         desc = "Tests uptime for a list of services."
-        usage_string =\
-            "[-s/--services] ([-t/--time] | [-d/--daemon]) [-o/--output-file]"
+        usage_string = "[-v/--verbose] [-s/--services] ([-t/--time] | [-d/--daemon]) [-o/--output-file]"
 
         super(ArgumentParser, self).__init__(usage=usage_string,
                                              description=desc)
@@ -34,6 +33,9 @@ class ArgumentParser(argparse.ArgumentParser):
         self.add_argument(
             "-s", "--services", metavar="<comma-delimited services list>",
             required=False, default=None)
+
+        self.add_argument("-v", "--verbose", required=False,
+                          action='store_true')
 
         group = self.add_mutually_exclusive_group()
         group.add_argument(
@@ -52,7 +54,7 @@ def entry_point():
 
     # Initialize Config Variables
     config = SafeConfigParser()
-    config.read("os.cnf")
+    config.read("../os.cnf")
     version = config.get("openstack", "version")
     user = config.get("openstack", "user")
     password = config.get("openstack", "password")
@@ -69,7 +71,21 @@ def entry_point():
     services = [service.strip() for service in
                 (cl_args.services or services_list).split(",")]
 
-    mad = test.ApiUptime(version, user, password, tenant, auth_url)
+    if cl_args.verbose:
+        print("api_uptime v{0}: an openstack polling tool.".format(version))
+        print('   user: {0}'.format(user))
+        print('   tenant: {0}'.format(tenant))
+        print('   auth_url: {0}'.format(auth_url))
+        print('   services_list: {0}'.format(services_list))
+        print('   daemon_file: {0}'.format(daemon_file))
+        print('   output_file: {0}'.format(output_file))
+        print(' ')
+        print('   services: {0}'.format(services))
+        print('   daemon: {0}'.format(cl_args.daemon))
+        print('   times: {0}'.format(cl_args.times))
+
+    mad = test.ApiUptime(version, user, password, tenant, auth_url,
+                         cl_args.verbose)
 
     time_value = cl_args.daemon if cl_args.daemon else cl_args.times
 

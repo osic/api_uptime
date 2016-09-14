@@ -25,7 +25,10 @@ from swiftclient import client as swiftclient
 
 
 class ApiUptime(object):
-    def __init__(self, version, username, password, tenant, auth_url):
+    def __init__(self, version, username, password, tenant, auth_url, verbose):
+        self.verbose = verbose
+        if self.verbose:
+            print('ApiUptime.__init__ entering')
         self.nova = novaclient.Client(version, username, password, tenant,
                                       auth_url)
         self.neutron = neutronclient.Client(username=username,
@@ -37,6 +40,9 @@ class ApiUptime(object):
         self.swift = swiftclient.Connection(authurl=auth_url, user=username,
                                             tenant_name=tenant, key=password,
                                             auth_version='2')
+
+        if self.verbose:
+            print('ApiUptime.__init__ leaving')
 
     def _proc_helper(self, function, conn, additional_args=None):
         try:
@@ -51,6 +57,9 @@ class ApiUptime(object):
             conn.close()
 
     def _uptime(self, conn, service, times, function, additional_args=None):
+        if self.verbose:
+            print('ApiUptime._uptime entering, service={0}'.format(service))
+            print('                            times={0}'.format(times))
         start_time = datetime.datetime.now()
         if times is True:
             times = xrange(sys.maxint)
@@ -60,6 +69,8 @@ class ApiUptime(object):
         for _ in times:
             if conn.poll() and conn.recv() == "STOP":
                 break
+            if self.verbose:
+                print('ApiUptime._uptime pinging service={0}'.format(service))
             p, c = Pipe()
             pipes.append(p)
             Process(target=self._proc_helper,
@@ -73,7 +84,12 @@ class ApiUptime(object):
         self.report(conn, service, sum(output), len(output), str(start_time),
                     str(datetime.datetime.now()))
 
+        if self.verbose:
+            print('ApiUptime._uptime leaving, service={0}'.format(service))
+
     def uptime(self, conn, service, times):
+        if self.verbose:
+            print('ApiUptime.uptime entering, service={0}'.format(service))
         if service == "neutron":
             self._uptime(conn, "neutron", times, self.neutron.list_subnets)
         elif service == "glance":
@@ -84,8 +100,12 @@ class ApiUptime(object):
             self._uptime(conn, "cinder", times, self.cinder.volumes.list)
         elif service == "swift":
             self._uptime(conn, "swift", times, self.swift.get_account)
+        if self.verbose:
+            print('ApiUptime.uptime leaving, service={0}'.format(service))
 
     def report(self, conn, service, success, total, start_time, end_time):
+        if self.verbose:
+            print('ApiUptime.report entered')
         uptime_pct = 100 * (success / total)
         conn.send({
             service: {
@@ -96,3 +116,5 @@ class ApiUptime(object):
                 "start_time": start_time,
                 "end_time": end_time}})
         conn.close()
+        if self.verbose:
+            print('ApiUptime.report leaving')
