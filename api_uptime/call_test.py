@@ -103,9 +103,13 @@ def entry_point():
     if cl_args.daemon:
         while True:
             if os.path.exists(daemon_file):
+                if cl_args.verbose:
+                    print('entry_point: found daemon_file. Stopping polling')
                 for pipe in pipes:
                     pipe.send("STOP")
                 break
+    if cl_args.verbose:
+        print('entry_point: polling complete. Gathering final output')
 
     outputs = [pipe.recv() for pipe in pipes]
     final_output = {k: v for d in outputs for k, v in d.items()}

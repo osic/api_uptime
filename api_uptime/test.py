@@ -70,13 +70,16 @@ class ApiUptime(object):
             if conn.poll() and conn.recv() == "STOP":
                 break
             if self.verbose:
-                print('ApiUptime._uptime pinging service={0}'.format(service))
+                print('ApiUptime._uptime pinging service={0} at {1}'.format(
+                    service, datetime.datetime.now()))
             p, c = Pipe()
             pipes.append(p)
             Process(target=self._proc_helper,
                     args=(function, c, additional_args)).start()
             c.close()
             sleep(1)
+        if self.verbose:
+            print("ApiUptime._uptime: done with pings")
         output = [pipe.recv() for pipe in pipes]
         # outputs is a list of True & False values, sum(output) will return
         # the amount of True values in the list (as True is equivalent to 1 in
