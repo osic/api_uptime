@@ -100,7 +100,7 @@ def entry_point():
         pipes.append(p)
         if cl_args.verbose:
             print("starting a process for service {0}".format(s))
-        Process(target=mad.uptime, args=(c, s, time_value,)).start()
+        Process(target=mad.uptime, args=(c, s, time_value)).start()
         if cl_args.verbose:
             print("back from process start for service {0}".format(s))
         c.close()
