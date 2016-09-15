@@ -19,6 +19,7 @@ from multiprocessing import Pipe
 from multiprocessing import Process
 import os
 import sys
+from time import sleep
 import test
 
 
@@ -97,11 +98,18 @@ def entry_point():
     for s in services:
         p, c = Pipe()
         pipes.append(p)
+        if cl_args.verbose:
+            print("starting a process for service {0}".format(s))
         Process(target=mad.uptime, args=(c, s, time_value,)).start()
+        if cl_args.verbose:
+            print("back from process start for service {0}".format(s))
         c.close()
 
+    if cl_args.verbose:
+        print("now entering loop to check for daemon file")
     if cl_args.daemon:
         while True:
+            sleep(5)
             if os.path.exists(daemon_file):
                 if cl_args.verbose:
                     print('entry_point: found daemon_file. Stopping polling')
