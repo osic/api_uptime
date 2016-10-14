@@ -49,10 +49,6 @@ class ArgumentParser(argparse.ArgumentParser):
             "-o", "--output-file", metavar="<path to output file>",
             required=False, default=None)
 
-        self.add_argument(
-            "-c", "--conf-file", metavar="<path to config file>",
-            required=True, default=None)
-
 
 def entry_point():
     cl_args = ArgumentParser().parse_args()
