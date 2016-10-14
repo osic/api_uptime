@@ -59,7 +59,7 @@ def entry_point():
     if os.path.isfile("../../tempest/etc/tempest.conf"):
         if cl_args.verbose:
             print("api_uptime: found the tempest config file")
-        config.read("../tempest/etc/tempest.conf") #initialize environment from tempest.conf
+        config.read("../../tempest/etc/tempest.conf") #initialize environment from tempest.conf
         user = config.get("auth", "admin_username")
         password = config.get("auth", "admin_password")
         tenant = config.get("auth", "admin_project_name")
