@@ -56,7 +56,9 @@ def entry_point():
     # Initialize Config Variables
     config = SafeConfigParser()
 
-    if os.path.isfile("../tempest/etc/tempest.conf"):
+    if os.path.isfile("../../tempest/etc/tempest.conf"):
+        if cl_args.verbose:
+            print("api_uptime: found the tempest config file")
         config.read("../tempest/etc/tempest.conf") #initialize environment from tempest.conf
         user = config.get("auth", "admin_username")
         password = config.get("auth", "admin_password")
@@ -64,7 +66,9 @@ def entry_point():
         auth_url = config.get("identity", "uri")
 
     else:
-        config.read("os.cnf") #add custom config
+        if cl_args.verbose:
+            print("api_uptime: no tempest config file")
+        config.read("../os.cnf") #add custom config
         user=config.get("openstack", "user")
         password=("openstack", "password")
         tenant=("openstack", "tenant")
