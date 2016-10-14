@@ -64,7 +64,6 @@ def entry_point():
         password = config.get("auth", "admin_password")
         tenant = config.get("auth", "admin_project_name")
         auth_url = config.get("identity", "uri")
-
     else:
         if cl_args.verbose:
             print("api_uptime: no tempest config file")
@@ -74,6 +73,7 @@ def entry_point():
         tenant=("openstack", "tenant")
         auth_url=config.get("openstack", "auth_url")
 
+    config.read("../os.cnf")  # add custom config
     version = config.get("openstack", "version")
     services_list = config.get("openstack", "services_list")
     daemon_file = config.get("openstack", "daemon_file") or os.path.join(
