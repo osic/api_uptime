@@ -80,12 +80,6 @@ def entry_point():
         sys.prefix, "api.uptime.stop")
     output_file = cl_args.output_file or config.get("openstack", "output_file")
 
-    # hack hack hack override here for onmetal tests
-    services_list = "nova"
-    daemon_file = "/usr/api.uptime.stop"
-    output_file = "/usr/api_uptime.out"
-
-
     if cl_args.daemon and os.path.exists(daemon_file):
         os.remove(daemon_file)
 
