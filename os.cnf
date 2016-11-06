@@ -5,5 +5,5 @@ password={{PASSWORD}}
 tenant={{TENANT}}
 auth_url=http://{{IP}}:5000/v2.0
 services_list={{SERVICES}}
-daemon_file={{DAEMON_FILE}}
+daemon_file=
 output_file={{OUTPUT_FILE}}
