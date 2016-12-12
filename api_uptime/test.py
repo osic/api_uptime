@@ -109,7 +109,7 @@ class ApiUptime(object):
     def report(self, conn, service, success, total, start_time, end_time):
         if self.verbose:
             print('ApiUptime.report entered')
-        uptime_pct = 100 * (success / total)
+        uptime_pct = 100 * (float(success)/ total)
         conn.send({
             service: {
                 "uptime_pct": uptime_pct,
