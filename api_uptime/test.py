@@ -24,7 +24,6 @@ import requests
 from cinderclient import client as cinderclient
 from neutronclient.v2_0 import client as neutronclient
 from novaclient import client as novaclient
-from swiftclient import client as swiftclient
 
 
 class ApiUptime(object):
