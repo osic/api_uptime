@@ -88,6 +88,7 @@ class ApiUptime(object):
 	    print e 
 	    if any(c in str(e) for c in ('503','404')):
 		print "Error getting swift url. Is swift installed?"
+		print "Or Keystone maybe down, swift tests will not start."
                 return False
 
 	try:
