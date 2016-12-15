@@ -40,18 +40,24 @@ class ApiUptime(object):
                                             auth_url=auth_url)
         self.cinder = cinderclient.Client('2', username, password, tenant,
                                           auth_url)
-        self.swift = swiftclient.Connection(authurl=auth_url, user=username,
-                                            tenant_name=tenant, key=password,
-                                            auth_version='2')
 	self.url = auth_url + '/'
         self.data = '{"auth":{"passwordCredentials":{"username":"' + username + '","password": "' + password + '"},"tenantName": "' + tenant + '"}}'
-        self.headers = self.get_token()
-	self.swift_url = self.get_swift_url()
+        self.headers = self._get_token()
+	self.swift_url = self._get_swift_url()
 
         if self.verbose:
             print('ApiUptime.__init__ leaving')
+	
+    def get_swift_info(self):
+        response = str(requests.put(self.swift_url + 'info', headers=self.headers))
+	if any(c in response for c in ('201','202')): return True
+	if '401' in response:
+	    print "Getting token, it may have expired."
+            self.headers = self.get_token()
+	    return True
+        return False
 
-    def get_token(self):
+    def _get_token(self):
         get_token = None
         headers = {'Content-Type': 'application/json'}
         url = self.url + 'tokens'
@@ -71,7 +77,7 @@ class ApiUptime(object):
         header = {'X-Auth-Token': token}
         return header
 
-    def get_swift_url(self):
+    def _get_swift_url(self):
 	swift_url = None
         headers = {'Content-Type': 'application/json'}
         url = self.url + 'tokens'
@@ -83,7 +89,6 @@ class ApiUptime(object):
 	    print e 
 	    if any(c in str(e) for c in ('503','404')):
 		print "Error getting swift url. Is swift installed?"
-		print "Keystone maybe down, swift tests will not start."
                 return False
 
 	try:
@@ -96,6 +101,7 @@ class ApiUptime(object):
 	except Exception as e:
 	    print e
 	    print "Error getting swift url. Is swift installed?"
+	    print "Or Keystone maybe down, swift tests will not start."
 	    f.close()
 	    return False
         f.close()
@@ -125,16 +131,6 @@ class ApiUptime(object):
         except Exception:
             conn.send(False)
             conn.close()
-
-    def get_swift_info(self):
-        response = str(requests.put(self.swift_url + 'info', headers=self.headers))
-	print response
-	if any(c in response for c in ('201','202')): return True
-	if '401' in response:
-	    print "Getting token, it may have expired."
-            self.headers = self.get_token()
-	    return True
-        return False
 
     def _uptime(self, conn, service, times, function, additional_args=None):
         if self.verbose:
