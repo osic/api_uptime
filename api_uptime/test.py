@@ -17,6 +17,9 @@ from multiprocessing import Pipe
 from multiprocessing import Process
 import sys
 from time import sleep
+import urllib2
+import json
+import requests
 
 from cinderclient import client as cinderclient
 from neutronclient.v2_0 import client as neutronclient
@@ -40,21 +43,98 @@ class ApiUptime(object):
         self.swift = swiftclient.Connection(authurl=auth_url, user=username,
                                             tenant_name=tenant, key=password,
                                             auth_version='2')
+	self.url = auth_url + '/'
+        self.data = '{"auth":{"passwordCredentials":{"username":"' + username + '","password": "' + password + '"},"tenantName": "' + tenant + '"}}'
+        self.headers = self.get_token()
+	self.swift_url = self.get_swift_url()
 
         if self.verbose:
             print('ApiUptime.__init__ leaving')
 
-    def _proc_helper(self, function, conn, additional_args=None):
+    def get_token(self):
+        get_token = None
+        headers = {'Content-Type': 'application/json'}
+        url = self.url + 'tokens'
+        req = urllib2.Request(url, self.data, {'Content-Type': 'application/json'})
+
+	try:
+            f = urllib2.urlopen(req)
+	except Exception as e:
+	    if any(c in str(e) for c in ('503','404')):
+		print "Error getting token"
+		return False
+
+        for x in f:
+            d = json.loads(x)
+            token = d['access']['token']['id']
+	f.close()
+        header = {'X-Auth-Token': token}
+        return header
+
+    def get_swift_url(self):
+	swift_url = None
+        headers = {'Content-Type': 'application/json'}
+        url = self.url + 'tokens'
+        req = urllib2.Request(url, self.data, {'Content-Type': 'application/json'})
+
+        try:
+            f = urllib2.urlopen(req)
+        except Exception as e:
+	    print e 
+	    if any(c in str(e) for c in ('503','404')):
+		print "Error getting swift url. Is swift installed?"
+		print "Keystone maybe down, swift tests will not start."
+                return False
+
+	try:
+            for x in f:
+                d = json.loads(x)
+                for j in d['access']['serviceCatalog']:
+                    if j['name'] == 'swift':
+                        for k in j['endpoints']:
+                            swift_url = k['internalURL']
+	except Exception as e:
+	    print e
+	    print "Error getting swift url. Is swift installed?"
+	    f.close()
+	    return False
+        f.close()
+
+	if swift_url == None: return False
+	
+        return swift_url + '/'
+
+    def _proc_helper(self, service, function, conn, additional_args=None):
+	response = True
         try:
             if additional_args is not None:
                 function(additional_args)
+	    elif service == 'swift':
+		if function():
+                    conn.send(True)
+                    conn.close()
+		else:
+                    conn.send(False)
+                    conn.close()
+		return
             else:
                 function()
+
             conn.send(True)
             conn.close()
         except Exception:
             conn.send(False)
             conn.close()
+
+    def get_swift_info(self):
+        response = str(requests.put(self.swift_url + 'info', headers=self.headers))
+	print response
+	if any(c in response for c in ('201','202')): return True
+	if '401' in response:
+	    print "Getting token, it may have expired."
+            self.headers = self.get_token()
+	    return True
+        return False
 
     def _uptime(self, conn, service, times, function, additional_args=None):
         if self.verbose:
@@ -75,7 +155,7 @@ class ApiUptime(object):
             p, c = Pipe()
             pipes.append(p)
             Process(target=self._proc_helper,
-                    args=(function, c, additional_args)).start()
+                    args=(service, function, c, additional_args)).start()
             c.close()
             sleep(1)
         if self.verbose:
@@ -91,6 +171,7 @@ class ApiUptime(object):
             print('ApiUptime._uptime leaving, service={0}'.format(service))
 
     def uptime(self, conn, service, times):
+
         if self.verbose:
             print('ApiUptime.uptime entering, service={0}'.format(service))
         if service == "neutron":
@@ -102,7 +183,7 @@ class ApiUptime(object):
         elif service == "cinder":
             self._uptime(conn, "cinder", times, self.cinder.volumes.list)
         elif service == "swift":
-            self._uptime(conn, "swift", times, self.swift.get_account)
+            self._uptime(conn, "swift", times, self.get_swift_info)
         if self.verbose:
             print('ApiUptime.uptime leaving, service={0}'.format(service))
 
