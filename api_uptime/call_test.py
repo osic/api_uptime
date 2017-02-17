@@ -137,6 +137,7 @@ def entry_point():
     else:
         with open(output_file, 'w') as out:
             out.write(json.dumps(final_output))
+        print "Output stored here: " + output_file
 
 
 if __name__ == "__main__":
