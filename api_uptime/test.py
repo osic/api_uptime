@@ -43,17 +43,29 @@ class ApiUptime(object):
         self.data = '{"auth":{"passwordCredentials":{"username":"' + username + '","password": "' + password + '"},"tenantName": "' + tenant + '"}}'
         self.headers = self._get_token()
 	self.swift_url = self._get_swift_url()
+	self.nova_url = self._get_nova_url()
 
         if self.verbose:
             print('ApiUptime.__init__ leaving')
 	
     def get_swift_info(self):
         response = str(requests.put(self.swift_url + 'info', headers=self.headers))
-	if any(c in response for c in ('201','202')): return True
+	
+        if any(c in response for c in ('201','202')): return True
 	if '401' in response:
 	    print "Getting token, it may have expired."
             self.headers = self.get_token()
 	    return True
+        return False
+
+    def nova_list_servers(self):
+        response = str(requests.get(self.nova_url + 'servers', headers=self.headers))
+        
+	if any(c in response for c in ('201','202')): return True
+        if '401' in response:
+            print "Getting token, it may have expired."
+            self.headers = self.get_token()
+            return True
         return False
 
     def _get_token(self):
@@ -107,36 +119,82 @@ class ApiUptime(object):
         f.close()
 
 	if swift_url == None: return False
-	
         return swift_url + '/'
 
-    def _proc_helper(self, service, function, conn, additional_args=None):
+    def _get_nova_url(self):
+        nova_url = None
+        headers = {'Content-Type': 'application/json'}
+        url = self.url + 'tokens'
+        req = urllib2.Request(url, self.data, {'Content-Type': 'application/json'})
+
+        try:
+            f = urllib2.urlopen(req)
+        except Exception as e:
+            print e
+            if any(c in str(e) for c in ('503','404')):
+                print "Error getting nova url. Is nova installed?"
+                print "Or Keystone maybe down, swift tests will not start."
+                return False
+
+        try:
+            for x in f:
+                d = json.loads(x)
+                for j in d['access']['serviceCatalog']:
+                    if j['name'] == 'nova':
+                        for k in j['endpoints']:
+                            nova_url = k['internalURL']
+        except Exception as e:
+            print e
+            print "Error getting nova url. Is nova installed?"
+            print "Or Keystone maybe down, nova tests will not start."
+            f.close()
+            return False
+        f.close()
+
+        if nova_url == None: return False
+
+        return nova_url + '/'
+
+
+    def _proc_helper(self, service, function, conn, build_start, duration, additional_args=None):
 	response = True
         try:
             if additional_args is not None:
                 function(additional_args)
 	    elif service == 'swift':
 		if function():
+		    status = 1
                     conn.send(True)
                     conn.close()
 		else:
+		    status = 0
                     conn.send(False)
                     conn.close()
-		return
             else:
                 function()
-
-            conn.send(True)
-            conn.close()
-        except Exception:
+	        status = 1
+                conn.send(True)
+                conn.close()
+        except Exception as e:
+	    print "Fail: " + str(e)
+	    status = 0
             conn.send(False)
             conn.close()
+
+	timestamp = str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z"))
+	log = {"service": service, "status": status, "timestamp": timestamp, "duration": duration, "total_down": 0, "time_run_started": build_start}
+        f = open('../output/' + service + '_api_status.json','a')
+        f.write(json.dumps(log) + "\n")
+        f.close()
+	print log
+
 
     def _uptime(self, conn, service, times, function, additional_args=None):
         if self.verbose:
             print('ApiUptime._uptime entering, service={0}'.format(service))
             print('                            times={0}'.format(times))
-        start_time = datetime.datetime.now()
+        start_time = str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z"))
+        count = 1
         if times is True:
             times = xrange(sys.maxint)
         else:
@@ -151,9 +209,10 @@ class ApiUptime(object):
             p, c = Pipe()
             pipes.append(p)
             Process(target=self._proc_helper,
-                    args=(service, function, c, additional_args)).start()
+                    args=(service, function, c, start_time, count, additional_args)).start()
             c.close()
             sleep(1)
+	    count += 1
         if self.verbose:
             print("ApiUptime._uptime: done with pings")
         output = [pipe.recv() for pipe in pipes]
@@ -168,6 +227,8 @@ class ApiUptime(object):
 
     def uptime(self, conn, service, times):
 
+        open('../output/' + service + '_api_status.json','w')
+
         if self.verbose:
             print('ApiUptime.uptime entering, service={0}'.format(service))
         if service == "neutron":
@@ -175,7 +236,8 @@ class ApiUptime(object):
         elif service == "glance":
             self._uptime(conn, "glance", times, self.nova.images.list)
         elif service == "nova":
-            self._uptime(conn, "nova", times, self.nova.servers.list)
+            #self._uptime(conn, "nova", times, self.nova.servers.list)
+	    self._uptime(conn, "nova", times, self.nova_list_servers)
         elif service == "cinder":
             self._uptime(conn, "cinder", times, self.cinder.volumes.list)
         elif service == "swift":

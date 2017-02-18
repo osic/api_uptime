@@ -69,8 +69,8 @@ def entry_point():
             print("api_uptime: no tempest config file")
         config.read("../os.cnf") #add custom config
         user=config.get("openstack", "user")
-        password=("openstack", "password")
-        tenant=("openstack", "tenant")
+        password=config.get("openstack", "password")
+        tenant=config.get("openstack", "tenant")
         auth_url=config.get("openstack", "auth_url")
 
     config.read("../os.cnf")  # add custom config
@@ -137,6 +137,7 @@ def entry_point():
     else:
         with open(output_file, 'w') as out:
             out.write(json.dumps(final_output))
+	print('{0}'.format(json.dumps(final_output)))
         print "Output stored here: " + output_file
 
 
