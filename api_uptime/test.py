@@ -183,7 +183,7 @@ class ApiUptime(object):
 
 	timestamp = str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z"))
 	log = {"service": service, "status": status, "timestamp": timestamp, "duration": duration, "total_down": 0, "time_run_started": build_start}
-        f = open('../output/' + service + '_api_status.json','a')
+        f = open('../../output/' + service + '_api_status.json','a')
         f.write(json.dumps(log) + "\n")
         f.close()
 	print log
@@ -227,7 +227,7 @@ class ApiUptime(object):
 
     def uptime(self, conn, service, times):
 
-        open('../output/' + service + '_api_status.json','w')
+        open('../../output/' + service + '_api_status.json','w')
 
         if self.verbose:
             print('ApiUptime.uptime entering, service={0}'.format(service))
