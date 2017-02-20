@@ -44,6 +44,7 @@ class ApiUptime(object):
         self.headers = self._get_token()
 	self.swift_url = self._get_swift_url()
 	self.nova_url = self._get_nova_url()
+	self.error_output = None
 
         if self.verbose:
             print('ApiUptime.__init__ leaving')
@@ -81,7 +82,7 @@ class ApiUptime(object):
 		print "Error getting token"
 		return False
 	    else:
-		print "Error on line 84: " + str(e)
+		self.error_output = str(e) + " on line 84"
 		return False
 
         for x in f:
@@ -102,11 +103,11 @@ class ApiUptime(object):
         except Exception as e:
 	    print e 
 	    if any(c in str(e) for c in ('503','404')):
-		print "Error getting swift url. Is swift installed?"
+		self.error_output = "Error getting swift url. Is swift installed?"
 		print "Or Keystone maybe down, swift tests will not start."
                 return False
 	    else:
-		print "Error on line 109: " + str(e)
+		self.error_output = str(e) + " on line 109"
 		return False
 
 	try:
@@ -117,7 +118,7 @@ class ApiUptime(object):
                         for k in j['endpoints']:
                             swift_url = k['internalURL']
 	except Exception as e:
-	    print e
+	    self.error_output = str(e) + " on line 121"
 	    print "Error getting swift url. Is swift installed?"
 	    print "Or Keystone maybe down, swift tests will not start."
 	    f.close()
@@ -138,11 +139,11 @@ class ApiUptime(object):
         except Exception as e:
             print e
             if any(c in str(e) for c in ('503','404')):
-                print "Error getting nova url. Is nova installed?"
+                self.error_output = "Error getting nova url. Is nova installed?"
                 print "Or Keystone maybe down, swift tests will not start."
                 return False
 	    else:
-		print "Error on line 145: " + str(e)
+		self.error_output = str(e) + " on line 145"
 		return False
 
         try:
@@ -153,7 +154,7 @@ class ApiUptime(object):
                         for k in j['endpoints']:
                             nova_url = k['internalURL']
         except Exception as e:
-            print e
+            self.error_output = str(e) + " on line 157"
             print "Error getting nova url. Is nova installed?"
             print "Or Keystone maybe down, nova tests will not start."
             f.close()
@@ -185,13 +186,13 @@ class ApiUptime(object):
                 conn.send(True)
                 conn.close()
         except Exception as e:
-	    print "Fail: " + str(e)
+	    self.error_output = str(e) + " on line 189"
 	    status = 0
             conn.send(False)
             conn.close()
 
 	timestamp = str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z"))
-	log = {"service": service, "status": status, "timestamp": timestamp, "duration": duration, "total_down": 0, "time_run_started": build_start}
+	log = {"service": service, "status": status, "timestamp": timestamp, "duration": duration, "total_down": 0, "error": self.error_output, "time_run_started": build_start}
         f = open('../../output/' + service + '_api_status.json','a')
         f.write(json.dumps(log) + "\n")
         f.close()
