@@ -166,7 +166,7 @@ class ApiUptime(object):
         return nova_url + '/'
 
 
-    def _proc_helper(self, service, function, conn, build_start, duration, additional_args=None):
+    def _proc_helper(self, service, function, build_start, duration, additional_args=None):
 	response = True
         try:
             if additional_args is not None:
@@ -174,22 +174,22 @@ class ApiUptime(object):
 	    elif service == 'swift' or service == 'nova':
 		if function():
 		    status = 1
-                    conn.send(True)
-                    conn.close()
+                    #conn.send(True)
+                    #conn.close()
 		else:
 		    status = 0
-                    conn.send(False)
-                    conn.close()
+                    #conn.send(False)
+                    #conn.close()
             else:
                 function()
 	        status = 1
-                conn.send(True)
-                conn.close()
+                #conn.send(True)
+                #conn.close()
         except Exception as e:
 	    self.error_output = str(e) + " on line 189"
 	    status = 0
-            conn.send(False)
-            conn.close()
+            #conn.send(False)
+            #conn.close()
 
 	timestamp = str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z"))
 	log = {"service": service, "status": status, "timestamp": timestamp, "duration": duration, "total_down": 0, "error": self.error_output, "time_run_started": build_start}
@@ -214,16 +214,18 @@ class ApiUptime(object):
             if self.verbose:
                 print('ApiUptime._uptime pinging service={0} at {1}'.format(
                     service, datetime.datetime.now()))
-            p, c = Pipe()
-            pipes.append(p)
+            #p, c = Pipe()
+            #pipes.append(p)
             Process(target=self._proc_helper,
-                    args=(service, function, c, start_time, count, additional_args)).start()
-            c.close()
+                    args=(service, function, start_time, count, additional_args)).start()
+            #c.close()
             sleep(1)
 	    count += 1
         if self.verbose:
             print("ApiUptime._uptime: done with pings")
-        output = [pipe.recv() for pipe in pipes]
+        #output = [pipe.recv() for pipe in pipes]
+	#This is just filler stuff
+	output = [1,1]
         # outputs is a list of True & False values, sum(output) will return
         # the amount of True values in the list (as True is equivalent to 1 in
         # Python and False is equivalent to 0)
