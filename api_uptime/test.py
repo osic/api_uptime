@@ -54,7 +54,7 @@ class ApiUptime(object):
         if any(c in response for c in ('201','202')): return True
 	if '401' in response:
 	    print "Getting token, it may have expired."
-            self.headers = self.get_token()
+            self.headers = self._get_token()
 	    return True
         return False
 
@@ -64,7 +64,7 @@ class ApiUptime(object):
 	if any(c in response for c in ('201','202')): return True
         if '401' in response:
             print "Getting token, it may have expired."
-            self.headers = self.get_token()
+            self.headers = self._get_token()
             return True
         return False
 
@@ -79,6 +79,9 @@ class ApiUptime(object):
 	except Exception as e:
 	    if any(c in str(e) for c in ('503','404')):
 		print "Error getting token"
+		return False
+	    else:
+		print "Error on line 84: " + str(e)
 		return False
 
         for x in f:
@@ -102,6 +105,9 @@ class ApiUptime(object):
 		print "Error getting swift url. Is swift installed?"
 		print "Or Keystone maybe down, swift tests will not start."
                 return False
+	    else:
+		print "Error on line 109: " + str(e)
+		return False
 
 	try:
             for x in f:
@@ -135,6 +141,9 @@ class ApiUptime(object):
                 print "Error getting nova url. Is nova installed?"
                 print "Or Keystone maybe down, swift tests will not start."
                 return False
+	    else:
+		print "Error on line 145: " + str(e)
+		return False
 
         try:
             for x in f:
@@ -161,7 +170,7 @@ class ApiUptime(object):
         try:
             if additional_args is not None:
                 function(additional_args)
-	    elif service == 'swift':
+	    elif service == 'swift' or service == 'nova':
 		if function():
 		    status = 1
                     conn.send(True)
