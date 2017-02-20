@@ -52,7 +52,7 @@ class ApiUptime(object):
     def get_swift_info(self):
         response = str(requests.put(self.swift_url + 'info', headers=self.headers))
 	
-        if any(c in response for c in ('201','202')): return True
+        if any(c in response for c in ('201','200','202')): return True
 	if '401' in response:
 	    print "Getting token, it may have expired."
             self.headers = self._get_token()
@@ -62,7 +62,7 @@ class ApiUptime(object):
     def nova_list_servers(self):
         response = str(requests.get(self.nova_url + 'servers', headers=self.headers))
         
-	if any(c in response for c in ('201','202')): return True
+	if any(c in response for c in ('201','200','202')): return True
         if '401' in response:
             print "Getting token, it may have expired."
             self.headers = self._get_token()
