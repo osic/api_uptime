@@ -195,8 +195,6 @@ class ApiUptime(object):
         f = open('../../output/' + service + '_api_status.json','a')
         f.write(json.dumps(log) + "\n")
         f.close()
-	print log
-
 
     def _uptime(self, conn, service, times, function, additional_args=None):
         if self.verbose:
