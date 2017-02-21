@@ -20,6 +20,7 @@ from time import sleep
 import urllib2
 import json
 import requests
+import os
 
 from cinderclient import client as cinderclient
 from neutronclient.v2_0 import client as neutronclient
@@ -211,6 +212,8 @@ class ApiUptime(object):
         for _ in times:
             if conn.poll() and conn.recv() == "STOP":
                 break
+	    elif os.path.isfile('/usr/api.uptime.stop')
+		break
             if self.verbose:
                 print('ApiUptime._uptime pinging service={0} at {1}'.format(
                     service, datetime.datetime.now()))
