@@ -1,4 +1,4 @@
-A python script that pings an OpenStack environment in-parallel using NovaClient.
+A python script that pings an OpenStack environment in-parallel using http get requests.
 
 To get started:
 
